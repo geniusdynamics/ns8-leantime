@@ -33,9 +33,16 @@ mariadb_config = {
     "MARIADB_USER": MARIADB_USER,
     "MARIADB_PASSWORD": MARIADB_PASSWORD
 }
-
 agent.write_envfile("database.env", mariadb_config)
 
+lean_db_config = {
+    "LEAN_DB_HOST": "mariadb-app",
+    "LEAN_DB_USER": MARIADB_USER,
+    "LEAN_DB_PASSWORD": MARIADB_PASSWORD,
+    "LEAN_DB_DATABASE": MARIADB_DATABASE,
+    "LEAN_DB_PORT": "3306"
+}
+agent.write_envfile("leantime-db.env", lean_db_config)
 
 # just before starting systemd unit
 #agent.dump_env()
