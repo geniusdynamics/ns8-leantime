@@ -47,6 +47,13 @@ You can retrieve the configuration with
 ```
 api-cli run get-configuration --agent module/leantime1
 ```
+## Update
+
+To Update the instance:
+
+```shell
+api-cli run update-module --data '{"module_url":"ghcr.io/geniusdynamics/leantime:latest","instances":["leantime1"],"force":true}'
+```
 
 ## Uninstall
 
