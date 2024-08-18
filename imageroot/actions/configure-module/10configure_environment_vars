@@ -12,22 +12,33 @@ import agent
 # Try to parse the stdin as JSON.
 # If parsing fails, output everything to stderr
 data = json.load(sys.stdin)
-
+host = data.get("host")
+LEAN_API_URL = f"https://{host}"
 #This is specific to you module, so you need to change it accordingly.
-# we read a json stdin {"vars1":true, "var2":"foo", "vars3": 3} and we writ it to .config/state/environment
-# Upper case to set environment variable and minor case to read from stdin
+rdb = agent.redis_connect(use_replica=True)
+smtp_settings = agent.get_smarthost_settings(rdb)
 
-# this values must exists in the json stdin
-# agent.set_env("MAIL_SERVER", data["mail_server"])
-# agent.set_env("LDAP_DOMAIN", data["ldap_domain"])
-
-# you can add default values for the following variables
-# agent.set_env("MAIL_DOMAIN",data.get("mail_domain",""))
-# agent.set_env("WOWORKERSCOUNT",data.get("workers_count",3))
-# agent.set_env("AUXILIARYACCOUNT",data.get("auxiliary_account",True))
-# agent.set_env("ACTIVESYNC",data.get("activesync",False))
+SMTP_ENABLED = 'true' if smtp_settings['enabled'] else 'false'
+SMTP_HOST = smtp_settings['host']
+SMTP_PORT = smtp_settings['port']
+SMTP_USERNAME = smtp_settings['username']
+SMTP_PASSWORD = smtp_settings['password']
+SMTP_ENCRYPTION = smtp_settings['encrypt_smtp']
+SMTP_TLSVERIFY = '1' if smtp_settings['tls_verify'] else ''
 
 
-# Make sure everything is saved inside the environment file
-# just before starting systemd unit
+lean_time = {
+    "LEAN_EMAIL_RETURN": '',
+    "LEAN_EMAIL_USE_SMTP": SMTP_ENABLED,
+    "LEAN_EMAIL_SMTP_HOSTS": SMTP_HOST,
+    "LEAN_EMAIL_SMTP_AUTH": 'true',
+    "LEAN_EMAIL_SMTP_USERNAME": SMTP_USERNAME,
+    "LEAN_EMAIL_SMTP_PASSWORD": SMTP_PASSWORD,
+    "LEAN_EMAIL_SMTP_AUTO_TLS": SMTP_TLSVERIFY,
+    "LEAN_EMAIL_SMTP_SECURE": SMTP_ENCRYPTION,
+    "LEAN_EMAIL_SMTP_SSLNOVERIFY": 'false',
+    "LEAN_EMAIL_SMTP_PORT": SMTP_PORT,
+    "LEAN_API_URL": LEAN_API_URL
+}
+agent.write_envfile("leantime.env", lean_time)
 #agent.dump_env()
