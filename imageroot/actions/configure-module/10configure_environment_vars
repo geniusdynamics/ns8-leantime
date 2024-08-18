@@ -38,7 +38,8 @@ lean_time = {
     "LEAN_EMAIL_SMTP_SECURE": SMTP_ENCRYPTION,
     "LEAN_EMAIL_SMTP_SSLNOVERIFY": 'false',
     "LEAN_EMAIL_SMTP_PORT": SMTP_PORT,
-    "LEAN_APP_URL ": LEAN_APP_URL
+    "LEAN_APP_URL ": LEAN_APP_URL,
+    "APP_URL": LEAN_APP_URL,
 }
 agent.write_envfile("leantime.env", lean_time)
 #agent.dump_env()
