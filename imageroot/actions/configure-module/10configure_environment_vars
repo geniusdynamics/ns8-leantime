@@ -13,7 +13,7 @@ import agent
 # If parsing fails, output everything to stderr
 data = json.load(sys.stdin)
 host = data.get("host")
-LEAN_API_URL = f"https://{host}"
+LEAN_APP_URL  = f"https://{host}"
 #This is specific to you module, so you need to change it accordingly.
 rdb = agent.redis_connect(use_replica=True)
 smtp_settings = agent.get_smarthost_settings(rdb)
@@ -38,7 +38,7 @@ lean_time = {
     "LEAN_EMAIL_SMTP_SECURE": SMTP_ENCRYPTION,
     "LEAN_EMAIL_SMTP_SSLNOVERIFY": 'false',
     "LEAN_EMAIL_SMTP_PORT": SMTP_PORT,
-    "LEAN_API_URL": LEAN_API_URL
+    "LEAN_APP_URL ": LEAN_APP_URL
 }
 agent.write_envfile("leantime.env", lean_time)
 #agent.dump_env()
