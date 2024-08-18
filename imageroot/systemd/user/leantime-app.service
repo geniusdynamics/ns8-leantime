@@ -21,10 +21,12 @@ ExecStartPre=-runagent discover-smarthost
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/leantime-app.pid \
     --cidfile %t/leantime-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/leantime.pod-id --replace -d --name  leantime-app \
-    --volume leantime-app:/var/www/html/:Z \
-    --volume ./tmp:/tmp:Z \
-    --env-file=%S/state/database.env \
-    ${NGINX_IMAGE}
+    --volume leanuserfiles:/var/www/html/userfiles/:Z \
+    --volume leanpublic_userfiles:/var/www/html/public/userfiles/:Z \
+    --volume leanplugins:/var/www/html/app/Plugins/:Z \
+    --env-file=%S/state/leantime.env \
+    --env-file=%S/state/leantime-db.env \
+    ${LEANTIME_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/leantime-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP leantime-app
 SyslogIdentifier=%u
