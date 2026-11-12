@@ -10,22 +10,20 @@ After=leantime.service mariadb-app.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
-EnvironmentFile=%S/state/environment
-EnvironmentFile=-%S/state/smarthost.env
-WorkingDirectory=%S/state
+EnvironmentFile=%E/state/environment
+WorkingDirectory=%E/state
 Restart=always
 TimeoutStopSec=70
 ExecStartPre=/bin/mkdir -p tmp
 ExecStartPre=/bin/rm -f %t/leantime-app.pid %t/leantime-app.ctr-id
-ExecStartPre=-runagent discover-smarthost
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/leantime-app.pid \
     --cidfile %t/leantime-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/leantime.pod-id --replace -d --name  leantime-app \
     --volume leanuserfiles:/var/www/html/userfiles/:Z \
     --volume leanpublic_userfiles:/var/www/html/public/userfiles/:Z \
     --volume leanplugins:/var/www/html/app/Plugins/:Z \
-    --env-file=%S/state/leantime.env \
-    --env-file=%S/state/leantime-db.env \
+    --env-file=%E/state/leantime.env \
+    --env-file=%E/state/leantime-db.env \
     ${LEANTIME_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/leantime-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP leantime-app
