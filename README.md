@@ -1,153 +1,120 @@
 # ns8-leantime
 
-This is a template module for [NethServer 8](https://github.com/NethServer/ns8-core).
-To start a new module from it:
-
+Module id: `leantime`. Images are pinned in `build-images.sh` and updated through reviewed changes.
 
 ## Install
 
-Instantiate the module with:
+```bash
+add-module ghcr.io/geniusdynamics/leantime:latest 1
+```
 
-    add-module ghcr.io/geniusdynamics/leantime:latest 1
-
-The output of the command will return the instance name.
-Output example:
-
-    {"module_id": "leantime1", "image_name": "leantime", "image_url": "ghcr.io/geniusdynamics/leantime:latest"}
+The command returns the instance id, for example `leantime1`. Use the id NS8 returns.
 
 ## Configure
 
-Let's assume that the mattermost instance is named `leantime1`.
-
-Launch `configure-module`, by setting the following parameters:
-- `host`: a fully qualified domain name for the application
-- `http2https`: enable or disable HTTP to HTTPS redirection (true/false)
-- `lets_encrypt`: enable or disable Let's Encrypt certificate (true/false)
-
-
-Example:
-
-```
-api-cli run configure-module --agent module/leantime1 --data - <<EOF
+```bash
+api-cli run configure-module --agent module/leantime1 --data - <<'EOF'
 {
-  "host": "leantime.domain.com",
+  "host": "leantime.example.org",
   "http2https": true,
   "lets_encrypt": false
 }
 EOF
 ```
 
-The above command will:
-- start and configure the leantime instance
-- configure a virtual host for trafik to access the instance
+| Parameter | Required | Type | Description |
+|---|---|---|---|
+| `host` | yes | string | Host name for the application, like 'leantime.domain.org' |
+| `lets_encrypt` | yes | boolean | Request a valid Let's Encrypt certificate. |
+| `http2https` | yes | boolean | Redirect all the HTTP requests to HTTPS |
+
+## Configuration output
+
+`get-configuration` returns: `host`, `lets_encrypt`, `http2https`.
+
+## Images
+
+| Image | Version |
+|---|---|
+| `docker.io/mariadb` | `13.0.2` |
+| `docker.io/leantime/leantime` | `3.1.4` |
+
+## Network and access
+
+- Reserves 1 TCP port(s) on the node. The web application is published through Traefik on the configured host name.
+- Runs rootless.
+- Declares these NS8 authorizations: `traefik@node:routeadm`.
+
+## Backup
+
+The following paths are included in the NS8 backup (`imageroot/etc/state-include.conf`):
+
+- `state/leantime.sql`
+- `state/leantime.env`
+- `state/leantime-db.env`
+- `volumes/leanuserfiles`
+- `volumes/leanpublic_userfiles`
+- `volumes/leanplugins`
+
+## Services
+
+- `leantime-app.service`
+- `leantime.service`
+- `mariadb-app.service`
 
 ## Get the configuration
-You can retrieve the configuration with
 
-```
+```bash
 api-cli run get-configuration --agent module/leantime1
 ```
-## Update
 
-To Update the instance:
+## Update and uninstall
 
-```shell
+```bash
 api-cli run update-module --data '{"module_url":"ghcr.io/geniusdynamics/leantime:latest","instances":["leantime1"],"force":true}'
+remove-module --no-preserve leantime1
 ```
 
-## Uninstall
-
-To uninstall the instance:
-
-    remove-module --no-preserve leantime1
-
-## Smarthost setting discovery
-
-Some configuration settings, like the smarthost setup, are not part of the
-`configure-module` action input: they are discovered by looking at some
-Redis keys.  To ensure the module is always up-to-date with the
-centralized [smarthost
-setup](https://geniusdynamics.github.io/ns8-core/core/smarthost/) every time
-leantime starts, the command `bin/discover-smarthost` runs and refreshes
-the `state/smarthost.env` file with fresh values from Redis.
-
-Furthermore if smarthost setup is changed when leantime is already
-running, the event handler `events/smarthost-changed/10reload_services`
-restarts the main module service.
-
-See also the `systemd/user/leantime.service` file.
-
-This setting discovery is just an example to understand how the module is
-expected to work: it can be rewritten or discarded completely.
-
-## Debug
-
-some CLI are needed to debug
-
-- The module runs under an agent that initiate a lot of environment variables (in /home/leantime1/.config/state), it could be nice to verify them
-on the root terminal
-
-    `runagent -m leantime1 env`
-
-- you can become runagent for testing scripts and initiate all environment variables
-  
-    `runagent -m leantime1`
-
- the path become : 
-```
-    echo $PATH
-    /home/leantime1/.config/bin:/usr/local/agent/pyenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/
-```
-
-- if you want to debug a container or see environment inside
- `runagent -m leantime1`
- ```
-podman ps
-CONTAINER ID  IMAGE                                      COMMAND               CREATED        STATUS        PORTS                    NAMES
-d292c6ff28e9  localhost/podman-pause:4.6.1-1702418000                          9 minutes ago  Up 9 minutes  127.0.0.1:20015->80/tcp  80b8de25945f-infra
-d8df02bf6f4a  docker.io/library/mariadb:10.11.5          --character-set-s...  9 minutes ago  Up 9 minutes  127.0.0.1:20015->80/tcp  mariadb-app
-9e58e5bd676f  docker.io/library/nginx:stable-alpine3.17  nginx -g daemon o...  9 minutes ago  Up 9 minutes  127.0.0.1:20015->80/tcp  leantime-app
-```
-
-you can see what environment variable is inside the container
-```
-podman exec  leantime-app env
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-TERM=xterm
-PKG_RELEASE=1
-MARIADB_DB_HOST=127.0.0.1
-MARIADB_DB_NAME=leantime
-MARIADB_IMAGE=docker.io/mariadb:10.11.5
-MARIADB_DB_TYPE=mysql
-container=podman
-NGINX_VERSION=1.24.0
-NJS_VERSION=0.7.12
-MARIADB_DB_USER=leantime
-MARIADB_DB_PASSWORD=leantime
-MARIADB_DB_PORT=3306
-HOME=/root
-```
-
-you can run a shell inside the container
-
-```
-podman exec -ti   leantime-app sh
-/ # 
-```
 ## Testing
 
-Test the module using the `test-module.sh` script:
+Continuous integration:
 
+- `Publish images` builds the module image on every push.
+- `Test module` installs the image on a QEMU NS8 node and runs the Robot Framework suite in `tests/`. It runs after `Publish images` succeeds on `dev` and on `main`.
+- `Build API JSON Schema docs` and the security scan run alongside.
 
-    ./test-module.sh <NODE_ADDR> ghcr.io/geniusdynamics/leantime:latest
+The suite installs the module, configures a host name, checks that the web application answers through Traefik, takes UI screenshots and removes the module.
 
-The tests are made using [Robot Framework](https://robotframework.org/)
+Run it locally with the NS8 standard infrastructure described in the [ns8-github-actions README](https://github.com/NethServer/ns8-github-actions/blob/v1/README.md#running-tests-locally).
 
-## UI translation
+## Open items
 
-Translated with [Weblate](https://hosted.weblate.org/projects/ns8/).
+Found by the NS8 module standards check. These must be resolved before a stable release:
 
-To setup the translation process:
+- The module description is still the template text: write a description of at least 60 characters in ui/public/metadata.json
+- tests/leantime.robot generated from template: set real configure payload and URL check
+- metadata: documentation_url is a placeholder
+- metadata: categories empty (use standard categories)
+- metadata: description.en needs >= 60 real chars (+ it translation)
+- mariadb-app.service: uses %S/state, kickstart uses %E/state
+- leantime.service: uses %S/state, kickstart uses %E/state
+- leantime-app.service: uses %S/state, kickstart uses %E/state
+- discover-smarthost still present: remove if the app does not use SMTP
+- README still has the template boilerplate
+- mariadb-app.service: %S/state changed to %E/state (review the bind mounts that remain)
+- leantime.service: %S/state changed to %E/state (review the bind mounts that remain)
+- leantime-app.service: %S/state changed to %E/state (review the bind mounts that remain)
+- imageroot/etc/state-include.conf: smarthost lines removed, check the unit still starts
+- imageroot/actions/restore-module/80start_services: smarthost lines removed, check the unit still starts
+- imageroot/actions/configure-module/80start_services: smarthost lines removed, check the unit still starts
+- imageroot/actions/configure-module/10configure_environment_vars: smarthost lines removed, check the unit still starts
+- imageroot/systemd/user/leantime-app.service: smarthost lines removed, check the unit still starts
+- LEANTIME_IMAGE is used by the module but no image in the label provides it: leftover from the template?
 
-- add [GitHub Weblate app](https://docs.weblate.org/en/latest/admin/continuous.html#github-setup) to your repository
-- add your repository to [hosted.weblate.org]((https://hosted.weblate.org) or ask a NethServer developer to add it to ns8 Weblate project
+## Upstream
+
+Application documentation: https://docs.leantime.com/
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).
